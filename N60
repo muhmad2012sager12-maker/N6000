@@ -1,0 +1,163 @@
+-- [1] تنظيف النسخ السابقة
+local oldUI = game.CoreGui:FindFirstChild("N60_Menu")
+if oldUI then oldUI:Destroy() end
+
+-- [2] إنشاء الواجهة الأساسية (ScreenGui)
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "N60_Menu"
+ScreenGui.Parent = game.CoreGui
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+-- [3] الزر المربع المتحرك (N60) للإخفاء والإظهار
+local ToggleBtn = Instance.new("TextButton")
+ToggleBtn.Name = "N60_Toggle"
+ToggleBtn.Parent = ScreenGui
+ToggleBtn.BackgroundColor3 = Color3.fromRGB(0, 120, 255)
+ToggleBtn.BorderSizePixel = 2
+ToggleBtn.BorderColor3 = Color3.fromRGB(255, 255, 255)
+ToggleBtn.Position = UDim2.new(0, 10, 0, 10)
+ToggleBtn.Size = UDim2.new(0, 50, 0, 50)
+ToggleBtn.Font = Enum.Font.GothamBold
+ToggleBtn.Text = "N60"
+ToggleBtn.TextColor3 = Color3.new(1, 1, 1)
+ToggleBtn.TextSize = 14
+ToggleBtn.Draggable = true -- يمديك تحركه في أي مكان
+
+local ToggleCorner = Instance.new("UICorner", ToggleBtn)
+
+-- [4] الإطار الرئيسي (الخلفية مع النجوم)
+local MainFrame = Instance.new("Frame")
+MainFrame.Name = "MainFrame"
+MainFrame.Parent = ScreenGui
+MainFrame.BackgroundColor3 = Color3.fromRGB(13, 13, 13)
+MainFrame.BorderSizePixel = 0
+MainFrame.Position = UDim2.new(0.5, -100, 0.4, -150)
+MainFrame.Size = UDim2.new(0, 250, 0, 350)
+MainFrame.ClipsDescendants = true -- عشان النجوم ما تطلع برا
+
+local MainCorner = Instance.new("UICorner", MainFrame)
+local MainStroke = Instance.new("UIStroke", MainFrame)
+MainStroke.Color = Color3.fromRGB(0, 100, 255)
+MainStroke.Thickness = 2
+
+-- [5] نظام النجوم المتحركة (Stars Effect)
+local function CreateStar()
+    local star = Instance.new("Frame")
+    star.Size = UDim2.new(0, 2, 0, 2)
+    star.BackgroundColor3 = Color3.new(1, 1, 1)
+    star.Position = UDim2.new(math.random(), 0, math.random(), 0)
+    star.BackgroundTransparency = 0.5
+    star.Parent = MainFrame
+    Instance.new("UICorner", star)
+    
+    task.spawn(function()
+        while star.Parent do
+            star:TweenPosition(UDim2.new(star.Position.X.Scale, 0, 1.1, 0), "In", "Linear", math.random(3, 7))
+            task.wait(7)
+            star.Position = UDim2.new(math.random(), 0, -0.1, 0)
+        end
+    end)
+end
+
+for i = 1, 20 do CreateStar() end
+
+-- [6] الأزرار الوظيفية (بناءً على الكود الذي أرسلته)
+local function CreateMenuBtn(name, pos, callback)
+    local btn = Instance.new("TextButton")
+    btn.Parent = MainFrame
+    btn.Size = UDim2.new(0.9, 0, 0, 45)
+    btn.Position = pos
+    btn.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+    btn.Font = Enum.Font.GothamBold
+    btn.Text = name
+    btn.TextColor3 = Color3.new(1, 1, 1)
+    btn.TextSize = 14
+    Instance.new("UICorner", btn)
+    
+    local stroke = Instance.new("UIStroke", btn)
+    stroke.Color = Color3.fromRGB(0, 80, 200)
+    
+    btn.MouseButton1Click:Connect(callback)
+end
+
+-- 1. زر جلب الأغراض (المجاني والروبوكس)
+CreateMenuBtn("تاخذ اغراض (مجاني + روبوكس)", UDim2.new(0.05, 0, 0, 60), function()
+    local bp = game.Players.LocalPlayer:WaitForChild("Backpack")
+    for _, obj in pairs(game:GetDescendants()) do
+        if obj:IsA("Tool") then
+            pcall(function() obj:Clone().Parent = bp end)
+        end
+    end
+    -- تفعيل الكبسولات (الصور التي أرسلتها سابقاً)
+    local hrp = game.Players.LocalPlayer.Character.HumanoidRootPart
+    for _, t in pairs(game.Workspace:GetDescendants()) do
+        if t:IsA("TouchTransmitter") then
+            firetouchinterest(hrp, t.Parent, 0)
+            firetouchinterest(hrp, t.Parent, 1)
+        end
+    end
+end)
+
+-- 2. زر التخريب (الفلينق الملاصق)
+local FlingOn = false
+CreateMenuBtn("تخريب على الجميع (فلينق)", UDim2.new(0.05, 0, 0, 120), function()
+    FlingOn = not FlingOn
+    if FlingOn then
+        task.spawn(function()
+            while FlingOn do
+                local plrs = game.Players:GetPlayers()
+                local target = plrs[math.random(1, #plrs)]
+                if target ~= game.Players.LocalPlayer and target.Character then
+                    local hrp = game.Players.LocalPlayer.Character.HumanoidRootPart
+                    local trp = target.Character:FindFirstChild("HumanoidRootPart")
+                    if trp then
+                        local spin = Instance.new("BodyAngularVelocity", hrp)
+                        spin.AngularVelocity = Vector3.new(0, 9999, 0)
+                        spin.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
+                        local s = tick()
+                        while tick() - s < 3 and FlingOn do
+                            hrp.CFrame = trp.CFrame
+                            hrp.Velocity = Vector3.new(1000, 1000, 1000)
+                            task.wait()
+                        end
+                        spin:Destroy()
+                    end
+                end
+                task.wait(0.1)
+            end
+        end)
+    end
+end)
+
+-- 3. زر الحماية القوية
+local AntiActive = false
+CreateMenuBtn("حماية من الكف والتبديل", UDim2.new(0.05, 0, 0, 180), function()
+    AntiActive = not AntiActive
+    task.spawn(function()
+        while AntiActive do
+            local char = game.Players.LocalPlayer.Character
+            if char then
+                for _, v in pairs(char:GetDescendants()) do
+                    if v:IsA("TouchTransmitter") then v:Destroy() end
+                    if v:IsA("BasePart") then v.CanTouch = false end
+                end
+            end
+            task.wait(0.1)
+        end
+    end)
+end)
+
+-- [7] برمجة زر N60 للإخفاء والإظهار
+ToggleBtn.MouseButton1Click:Connect(function()
+    MainFrame.Visible = not MainFrame.Visible
+end)
+
+-- شعار المطور في الأسفل
+local Label = Instance.new("TextLabel", MainFrame)
+Label.Size = UDim2.new(1, 0, 0, 20)
+Label.Position = UDim2.new(0, 0, 1, -25)
+Label.BackgroundTransparency = 1
+Label.Text = "@uniquadev | N60"
+Label.TextColor3 = Color3.fromRGB(100, 100, 100)
+Label.Font = Enum.Font.SourceSansItalic
+Label.TextSize = 12
